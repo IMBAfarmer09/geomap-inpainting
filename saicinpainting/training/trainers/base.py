@@ -123,11 +123,18 @@ class BaseInpaintingTrainingModule(ptl.LightningModule):
 
     def train_dataloader(self):
         kwargs = dict(self.config.data.train)
+        LOGGER.info("---------")
+        LOGGER.info(f"self.config.data.train: {self.config.data.train}")
+        LOGGER.info(f"kwargs before: {kwargs}")
         if self.use_ddp:
             kwargs['ddp_kwargs'] = dict(num_replicas=self.trainer.num_nodes * self.trainer.num_processes,
                                         rank=self.trainer.global_rank,
                                         shuffle=True)
-        dataloader = make_default_train_dataloader(**self.config.data.train)
+
+        LOGGER.info(f"kwargs after: {kwargs}")
+        LOGGER.info("---------")
+
+        dataloader = make_default_train_dataloader(**kwargs)
         return dataloader
 
     def val_dataloader(self):
@@ -289,3 +296,7 @@ class BaseInpaintingTrainingModule(ptl.LightningModule):
 
     def get_ddp_rank(self):
         return self.trainer.global_rank if (self.trainer.num_nodes * self.trainer.num_processes) > 1 else None
+
+    def load_state_dict(self, state_dict, strict=False):
+        # direct pass strict=False to avoid lama author error
+        return super().load_state_dict(state_dict, strict=strict)

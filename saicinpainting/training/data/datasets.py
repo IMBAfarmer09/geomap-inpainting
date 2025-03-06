@@ -234,15 +234,30 @@ def make_default_train_dataloader(indir, kind='default', out_size=512, mask_gen_
 
     is_dataset_only_iterable = kind in ('default_web',)
 
+    LOGGER.info("---------")
+    LOGGER.info("111111111")
+    LOGGER.info(f"ddp_kwargs before: {ddp_kwargs}")
+
+    container_dataloader_kwargs = OmegaConf.to_container(dataloader_kwargs, resolve=True)
     if ddp_kwargs is not None and not is_dataset_only_iterable:
-        dataloader_kwargs['shuffle'] = False
-        dataloader_kwargs['sampler'] = DistributedSampler(dataset, **ddp_kwargs)
+        LOGGER.info("222222222")
+        LOGGER.info(f"container_dataloader_kwargs: {container_dataloader_kwargs}")
 
-    if is_dataset_only_iterable and 'shuffle' in dataloader_kwargs:
-        with open_dict(dataloader_kwargs):
-            del dataloader_kwargs['shuffle']
+        container_dataloader_kwargs['shuffle'] = False
+        container_dataloader_kwargs['sampler'] = DistributedSampler(dataset, **ddp_kwargs)
 
-    dataloader = DataLoader(dataset, **dataloader_kwargs)
+        LOGGER.info(f"container_dataloader_kwargs after: {container_dataloader_kwargs}")
+
+    LOGGER.info("333333333")
+    if is_dataset_only_iterable and 'shuffle' in container_dataloader_kwargs:
+        with open_dict(container_dataloader_kwargs):
+            del container_dataloader_kwargs['shuffle']
+        LOGGER.info("444444444")
+
+    LOGGER.info("555555555")
+    LOGGER.info("---------")
+
+    dataloader = DataLoader(dataset, **container_dataloader_kwargs)
     return dataloader
 
 
