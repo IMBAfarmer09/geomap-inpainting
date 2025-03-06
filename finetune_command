@@ -1,0 +1,16 @@
+python bin/train.py -cn big-lama-celeba data.batch_size=10 +trainer.kwargs.resume_from_checkpoint=/home/zj/Programs/python_workspace/lama/big-lama-finetune/big-lama-with-discr-remove-loss_segm_pl.ckpt
+
+python bin/train.py -cn big-lama-celeba data.batch_size=10 +trainer.kwargs.resume_from_checkpoint=/home/zj/Programs/python_workspace/lama/experiments/zj_2025-02-17_19-14-01_train_big-lama-celeba_/models/last.ckpt
+
+
+# 5k finetune
+bash fetch_data/geomaphq_dataset_prepare.sh
+bash fetch_data/geomaphq_gen_masks.sh
+python bin/train.py -cn big-lama-geomap data.batch_size=10 +trainer.kwargs.resume_from_checkpoint=/home/zj/Programs/python_workspace/lama/big-lama-finetune/big-lama-with-discr-remove-loss_segm_pl.ckpt
+
+# 60k finetune
+bash fetch_data/geomaphq_60k_prepare.sh
+bash fetch_data/geomaphq_60k_gen_masks.sh
+python bin/train.py -cn big-lama-geomap data.batch_size=15 +trainer.kwargs.resume_from_checkpoint=/home/zj/Programs/python_workspace/lama/big-lama-finetune/big-lama-with-discr-remove-loss_segm_pl.ckpt
+
+python bin/train.py -cn big-lama-geomap data.batch_size=15 +trainer.kwargs.resume_from_checkpoint=/home/zj/Programs/python_workspace/lama/experiments/zj_2025-02-21_15-40-20_train_big-lama-geomap_/models/last.ckpt
