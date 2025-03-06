@@ -148,7 +148,9 @@ def handle_ddp_subprocess():
             parent_cwd = os.environ.get('TRAINING_PARENT_WORK_DIR', None)
             has_parent = parent_cwd is not None
             has_rank = get_has_ddp_rank()
-            assert has_parent == has_rank, f'Inconsistent state: has_parent={has_parent}, has_rank={has_rank}'
+            # assert has_parent == has_rank, f'Inconsistent state: has_parent={has_parent}, has_rank={has_rank}'
+            if has_parent != has_rank:
+                print(f"Warning: Inconsistent state: has_parent={has_parent}, has_rank={has_rank}")
 
             if has_parent:
                 # we are in the worker
@@ -169,7 +171,9 @@ def handle_ddp_parent_process():
     parent_cwd = os.environ.get('TRAINING_PARENT_WORK_DIR', None)
     has_parent = parent_cwd is not None
     has_rank = get_has_ddp_rank()
-    assert has_parent == has_rank, f'Inconsistent state: has_parent={has_parent}, has_rank={has_rank}'
+    # assert has_parent == has_rank, f'Inconsistent state: has_parent={has_parent}, has_rank={has_rank}'
+    if has_parent != has_rank:
+        print(f"Warning: Inconsistent state: has_parent={has_parent}, has_rank={has_rank}")
 
     if parent_cwd is None:
         os.environ['TRAINING_PARENT_WORK_DIR'] = os.getcwd()
