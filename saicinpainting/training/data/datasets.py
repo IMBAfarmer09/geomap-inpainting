@@ -34,6 +34,8 @@ class InpaintingTrainDataset(Dataset):
 
     def __getitem__(self, item):
         path = self.in_files[item]
+        #mask_path = path.split(".")[0]+".png"
+        LOGGER.info(f"******yzw*******img path:{path}")
         img = cv2.imread(path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = self.transform(image=img)['image']
