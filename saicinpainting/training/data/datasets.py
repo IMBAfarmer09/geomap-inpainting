@@ -19,6 +19,8 @@ from saicinpainting.evaluation.data import InpaintingDataset as InpaintingEvalua
 from saicinpainting.training.data.aug import IAAAffine2, IAAPerspective2
 from saicinpainting.training.data.masks import get_mask_generator
 
+from torchvision import transforms
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -28,20 +30,26 @@ class InpaintingTrainDataset(Dataset):
         self.mask_generator = mask_generator
         self.transform = transform
         self.iter_i = 0
+        self.mask_to_tensor = transforms.ToTensor()
 
     def __len__(self):
         return len(self.in_files)
 
     def __getitem__(self, item):
         path = self.in_files[item]
-        #mask_path = path.split(".")[0]+".png"
-        LOGGER.info(f"******yzw*******img path:{path}")
         img = cv2.imread(path)
+        mask_path = path.split(".")[0]+".png"
+        #LOGGER.info(f"******yzw******mask path:{mask_path}")
+        mask_img = cv2.imread(mask_path,cv2.IMREAD_GRAYSCALE)
+        mask_img = self.mask_to_tensor(mask_img)
+        #LOGGER.info(f"******yzw******mask:{mask_img}")
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = self.transform(image=img)['image']
         img = np.transpose(img, (2, 0, 1))
         # TODO: maybe generate mask before augmentations? slower, but better for segmentation-based masks
-        mask = self.mask_generator(img, iter_i=self.iter_i)
+        #mask = self.mask_generator(img, iter_i=self.iter_i)
+        mask = mask_img/255
+        #LOGGER.info(f"******yzw*******mask(0,1) shape:(1, 256, 256)")
         self.iter_i += 1
         return dict(image=img,
                     mask=mask)
