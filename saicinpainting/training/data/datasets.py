@@ -38,21 +38,24 @@ class InpaintingTrainDataset(Dataset):
     def __getitem__(self, item):
         path = self.in_files[item]
         img = cv2.imread(path)
-        mask_path = path.split(".")[0]+".png"
-        #LOGGER.info(f"******yzw******mask path:{mask_path}")
-        mask_img = cv2.imread(mask_path,cv2.IMREAD_GRAYSCALE)
-        mask_img = self.mask_to_tensor(mask_img)
-        #LOGGER.info(f"******yzw******mask:{mask_img}")
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = self.transform(image=img)['image']
         img = np.transpose(img, (2, 0, 1))
         # TODO: maybe generate mask before augmentations? slower, but better for segmentation-based masks
-        #mask = self.mask_generator(img, iter_i=self.iter_i)
-        mask = mask_img/255
+        # mask = self.mask_generator(img, iter_i=self.iter_i)
+        mask_path = path.split(".")[0]+".png"
+        mask_img = cv2.imread(mask_path,cv2.IMREAD_GRAYSCALE)
+        raw_255_count = np.sum(mask_img==255)
+        mask_img = self.mask_to_tensor(mask_img) 
+        #LOGGER.info(f"******yzw******mask_img shape:{mask_img.shape}")
+        mask_img = torch.where(mask_img==0,0.0,1.0)
+        mask_1_count = torch.count_nonzero(mask_img==1)
+        if raw_255_count!=mask_1_count:
+            LOGGER.info(f"******yzw*******mask path:{mask_path} maybe destroyed!")
         #LOGGER.info(f"******yzw*******mask(0,1) shape:(1, 256, 256)")
         self.iter_i += 1
         return dict(image=img,
-                    mask=mask)
+                    mask=mask_img)
 
 
 class InpaintingTrainWebDataset(IterableDataset):
