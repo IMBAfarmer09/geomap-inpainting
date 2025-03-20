@@ -83,7 +83,7 @@ class InpaintingEvaluator():
                 score.reset()
                 for batch in tqdm.auto.tqdm(self.dataloader, desc=score_name, leave=False):
                     batch = move_to_device(batch, self.device)
-                    image_batch, mask_batch = batch['image'], batch['mask']
+                    gt_batch,image_batch, mask_batch = batch['gt'],batch['image'], batch['mask']
                     if self.clamp_image_range is not None:
                         image_batch = torch.clamp(image_batch,
                                                   min=self.clamp_image_range[0],
@@ -94,7 +94,8 @@ class InpaintingEvaluator():
                         inpainted_batch = batch['inpainted']
                     else:
                         inpainted_batch = model(image_batch, mask_batch)
-                    score(inpainted_batch, image_batch, mask_batch)
+                    # score(inpainted_batch, image_batch, mask_batch)
+                    score(inpainted_batch, gt_batch, mask_batch)
                 total_results, group_results = score.get_value(groups=groups)
 
             results[(score_name, 'total')] = total_results

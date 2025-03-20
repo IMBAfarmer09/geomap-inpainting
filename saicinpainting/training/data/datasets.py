@@ -43,7 +43,7 @@ class InpaintingTrainDataset(Dataset):
         img = np.transpose(img, (2, 0, 1))
         # TODO: maybe generate mask before augmentations? slower, but better for segmentation-based masks
         # mask = self.mask_generator(img, iter_i=self.iter_i)
-        mask_path = path.split(".")[0]+".png"
+        mask_path = path.replace(".jpg",".png")
         mask_img = cv2.imread(mask_path,cv2.IMREAD_GRAYSCALE)
         raw_255_count = np.sum(mask_img==255)
         mask_img = self.mask_to_tensor(mask_img) 
@@ -52,10 +52,16 @@ class InpaintingTrainDataset(Dataset):
         mask_1_count = torch.count_nonzero(mask_img==1)
         if raw_255_count!=mask_1_count:
             LOGGER.info(f"******yzw*******mask path:{mask_path} maybe destroyed!")
+        text_img_path = path.replace(".jpg","_text.png")
+        text_img = cv2.imread(text_img_path)
+        text_img = cv2.cvtColor(text_img, cv2.COLOR_BGR2RGB)
+        text_img = self.transform(image=text_img)['image']
+        text_img = np.transpose(text_img, (2, 0, 1))
         #LOGGER.info(f"******yzw*******mask(0,1) shape:(1, 256, 256)")
         self.iter_i += 1
-        return dict(image=img,
-                    mask=mask_img)
+        return dict(image=text_img,
+                    mask=mask_img,
+                    gt=img)
 
 
 class InpaintingTrainWebDataset(IterableDataset):
@@ -83,6 +89,7 @@ class ImgSegmentationDataset(Dataset):
         self.out_size = out_size
         self.semantic_seg_n_classes = semantic_seg_n_classes
         self.in_files = list(glob.glob(os.path.join(indir, '**', '*.jpg'), recursive=True))
+        self.mask_to_tensor = transforms.ToTensor()
 
     def __len__(self):
         return len(self.in_files)
@@ -94,7 +101,13 @@ class ImgSegmentationDataset(Dataset):
         img = cv2.resize(img, (self.out_size, self.out_size))
         img = self.transform(image=img)['image']
         img = np.transpose(img, (2, 0, 1))
-        mask = self.mask_generator(img)
+        #mask = self.mask_generator(img)
+        mask_path = path.split(".")[0]+".png"
+        LOGGER.info(f"******yzw2******mask path:{mask_path}")
+        mask_img = cv2.imread(mask_path,cv2.IMREAD_GRAYSCALE)
+        #LOGGER.info(f"******yzw******mask:{mask_img}")
+        mask_img = self.mask_to_tensor(mask_img) 
+        mask = mask_img/255
         segm, segm_classes= self.load_semantic_segm(path)
         result = dict(image=img,
                       mask=mask,
@@ -222,6 +235,8 @@ def make_default_train_dataloader(indir, kind='default', out_size=512, mask_gen_
 
     mask_generator = get_mask_generator(kind=mask_generator_kind, kwargs=mask_gen_kwargs)
     transform = get_transforms(transform_variant, out_size)
+
+    LOGGER.info(f"*******yzw*******kind:{kind}")
 
     if kind == 'default':
         dataset = InpaintingTrainDataset(indir=indir,

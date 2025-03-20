@@ -58,8 +58,12 @@ def scale_image(img, factor, interpolation=cv2.INTER_AREA):
 class InpaintingDataset(Dataset):
     def __init__(self, datadir, img_suffix='.jpg', pad_out_to_modulo=None, scale_factor=None):
         self.datadir = datadir
+        print(f"******yzw*******datadir:{datadir}")
         self.mask_filenames = sorted(list(glob.glob(os.path.join(self.datadir, '**', '*mask*.png'), recursive=True)))
+        self.text_img_filenames = [fname.replace("mask","text") for fname in self.mask_filenames]
         self.img_filenames = [fname.rsplit('_mask', 1)[0] + img_suffix for fname in self.mask_filenames]
+        # print("mask filenames:",self.mask_filenames)
+        # print("text_img_filenames:",self.text_img_filenames)
         self.pad_out_to_modulo = pad_out_to_modulo
         self.scale_factor = scale_factor
 
@@ -67,17 +71,22 @@ class InpaintingDataset(Dataset):
         return len(self.mask_filenames)
 
     def __getitem__(self, i):
-        image = load_image(self.img_filenames[i], mode='RGB')
+        image = load_image(self.text_img_filenames[i], mode='RGB')
         mask = load_image(self.mask_filenames[i], mode='L')
-        result = dict(image=image, mask=mask[None, ...])
+        gt = load_image(self.img_filenames[i], mode='RGB')
+        # print("******yzw*******,val image path:",self.img_filenames[i])
+        # print("******yzw*******,val mask path:",self.mask_filenames[i])
+        result = dict(image=image,gt=gt, mask=mask[None, ...])
 
         if self.scale_factor is not None:
             result['image'] = scale_image(result['image'], self.scale_factor)
+            result['gt'] = scale_image(result['gt'], self.scale_factor)
             result['mask'] = scale_image(result['mask'], self.scale_factor, interpolation=cv2.INTER_NEAREST)
 
         if self.pad_out_to_modulo is not None and self.pad_out_to_modulo > 1:
             result['unpad_to_size'] = result['image'].shape[1:]
             result['image'] = pad_img_to_modulo(result['image'], self.pad_out_to_modulo)
+            result['gt'] = pad_img_to_modulo(result['gt'], self.pad_out_to_modulo)
             result['mask'] = pad_img_to_modulo(result['mask'], self.pad_out_to_modulo)
 
         return result

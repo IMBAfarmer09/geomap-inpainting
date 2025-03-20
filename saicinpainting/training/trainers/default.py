@@ -45,27 +45,37 @@ class DefaultInpaintingTrainingModule(BaseInpaintingTrainingModule):
             self.fake_fakes_gen = FakeFakesGenerator(**(fake_fakes_generator_kwargs or {}))
 
     def forward(self, batch):
+        #LOGGER.info(f"******yzw*******batch keys:{batch.keys()}")
         if self.training and self.rescale_size_getter is not None:
             cur_size = self.rescale_size_getter(self.global_step)
+            batch['gt'] = F.interpolate(batch['gt'], size=cur_size, mode='bilinear', align_corners=False)
             batch['image'] = F.interpolate(batch['image'], size=cur_size, mode='bilinear', align_corners=False)
             batch['mask'] = F.interpolate(batch['mask'], size=cur_size, mode='nearest')
 
         if self.training and self.const_area_crop_kwargs is not None:
             batch = make_constant_area_crop_batch(batch, **self.const_area_crop_kwargs)
 
-        img = batch['image']
+        LOGGER.info(f"******yzw******batch keys:{batch.keys()}")
+
+        img = batch['gt']
         mask = batch['mask']
 
-        masked_img = img * (1 - mask)
+
+        # masked_img = img * (1 - mask)
+        masked_img = batch['image']
+
+        # LOGGER.info(f"******yzw******mask img 1 shape:{masked_img.shape}")
 
         if self.add_noise_kwargs is not None:
-            noise = make_multiscale_noise(masked_img, **self.add_noise_kwargs)
-            if self.noise_fill_hole:
-                masked_img = masked_img + mask * noise[:, :masked_img.shape[1]]
-            masked_img = torch.cat([masked_img, noise], dim=1)
+        #     noise = make_multiscale_noise(masked_img, **self.add_noise_kwargs)
+        #     if self.noise_fill_hole:
+        #         masked_img = masked_img + mask * noise[:, :masked_img.shape[1]]
+            masked_img = torch.cat([masked_img, mask], dim=1)
 
         if self.concat_mask:
             masked_img = torch.cat([masked_img, mask], dim=1)
+
+        # LOGGER.info(f"******yzw******mask img 2 shape:{masked_img.shape}")
 
         batch['predicted_image'] = self.generator(masked_img)
         batch['inpainted'] = mask * batch['predicted_image'] + (1 - mask) * batch['image']
@@ -86,7 +96,7 @@ class DefaultInpaintingTrainingModule(BaseInpaintingTrainingModule):
         return batch
 
     def generator_loss(self, batch):
-        img = batch['image']
+        img = batch['gt']
         predicted_img = batch[self.image_to_discriminator]
         original_mask = batch['mask']
         supervised_mask = batch['mask_for_losses']
