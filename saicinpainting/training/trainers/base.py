@@ -288,7 +288,7 @@ class BaseInpaintingTrainingModule(ptl.LightningModule):
 
     def store_discr_outputs(self, batch):
         out_size = batch['image'].shape[2:]
-        discr_real_out, _ = self.discriminator(batch['image'])
+        discr_real_out, _ = self.discriminator(batch['gt'])
         discr_fake_out, _ = self.discriminator(batch['predicted_image'])
         batch['discr_output_real'] = F.interpolate(discr_real_out, size=out_size, mode='nearest')
         batch['discr_output_fake'] = F.interpolate(discr_fake_out, size=out_size, mode='nearest')

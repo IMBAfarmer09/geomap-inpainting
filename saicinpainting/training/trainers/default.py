@@ -152,11 +152,11 @@ class DefaultInpaintingTrainingModule(BaseInpaintingTrainingModule):
         metrics = {}
 
         predicted_img = batch[self.image_to_discriminator].detach()
-        self.adversarial_loss.pre_discriminator_step(real_batch=batch['image'], fake_batch=predicted_img,
+        self.adversarial_loss.pre_discriminator_step(real_batch=batch['gt'], fake_batch=predicted_img,
                                                      generator=self.generator, discriminator=self.discriminator)
-        discr_real_pred, discr_real_features = self.discriminator(batch['image'])
+        discr_real_pred, discr_real_features = self.discriminator(batch['gt'])
         discr_fake_pred, discr_fake_features = self.discriminator(predicted_img)
-        adv_discr_loss, adv_metrics = self.adversarial_loss.discriminator_loss(real_batch=batch['image'],
+        adv_discr_loss, adv_metrics = self.adversarial_loss.discriminator_loss(real_batch=batch['gt'],
                                                                                fake_batch=predicted_img,
                                                                                discr_real_pred=discr_real_pred,
                                                                                discr_fake_pred=discr_fake_pred,
@@ -168,11 +168,11 @@ class DefaultInpaintingTrainingModule(BaseInpaintingTrainingModule):
 
         if batch.get('use_fake_fakes', False):
             fake_fakes = batch['fake_fakes']
-            self.adversarial_loss.pre_discriminator_step(real_batch=batch['image'], fake_batch=fake_fakes,
+            self.adversarial_loss.pre_discriminator_step(real_batch=batch['gt'], fake_batch=fake_fakes,
                                                          generator=self.generator, discriminator=self.discriminator)
             discr_fake_fakes_pred, _ = self.discriminator(fake_fakes)
             fake_fakes_adv_discr_loss, fake_fakes_adv_metrics = self.adversarial_loss.discriminator_loss(
-                real_batch=batch['image'],
+                real_batch=batch['gt'],
                 fake_batch=fake_fakes,
                 discr_real_pred=discr_real_pred,
                 discr_fake_pred=discr_fake_fakes_pred,
