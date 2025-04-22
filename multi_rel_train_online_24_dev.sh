@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 #cd /mnt/tqnas/zhijiang/home/yzw/geomap-inpainting || { echo "directory not exist: /mnt/tqnas/zhijiang/home/yuansy/lama"; exit 1; }
-cd /home/zj/Music/geomap-inpainting || { echo "directory not exist: /mnt/tqnas/zhijiang/home/yuansy/lama"; exit 1; }
+cd /home/zj/Music/git-geomap/geomap-inpainting || { echo "directory not exist: /mnt/tqnas/zhijiang/home/yuansy/lama"; exit 1; }
 
 #export TRAINING_PARENT_WORK_DIR=$(pwd)
 export TORCH_HOME=$(pwd)
@@ -25,4 +25,4 @@ echo "tb_dir: ${PWD}/tf_logs/" >> $GEOMAP
 echo "pretrained_models: ${PWD}/" >> $GEOMAP
 
 # start training
-python -u bin/train.py -cn big-lama-geomap data.batch_size=8 +trainer.kwargs.resume_from_checkpoint=/home/zj/Music/geomap-inpainting/big-lama-finetune/big-lama-with-discr-remove-loss_segm_pl.ckpt
+python -u bin/train.py -cn big-lama-geomap data.batch_size=8 location.out_root_dir=/home/zj/Music/git-geomap/geomap-inpainting/experiments/testoutdir +trainer.kwargs.resume_from_checkpoint=/home/zj/Music/git-geomap/geomap-inpainting/big-lama-finetune/big-lama-with-discr-remove-loss_segm_pl.ckpt

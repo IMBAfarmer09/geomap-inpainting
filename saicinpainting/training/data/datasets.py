@@ -26,7 +26,8 @@ LOGGER = logging.getLogger(__name__)
 
 class InpaintingTrainDataset(Dataset):
     def __init__(self, indir, mask_generator, transform):
-        self.in_files = list(glob.glob(os.path.join(indir, '**', '*.jpg'), recursive=True))
+        # self.in_files = list(glob.glob(os.path.join(indir, '**', '*.jpg'), recursive=True))
+        self.in_files = list(glob.glob(os.path.join(indir, '**', '*_text000.png'), recursive=True))
         self.mask_generator = mask_generator
         self.transform = transform
         self.iter_i = 0
@@ -37,13 +38,15 @@ class InpaintingTrainDataset(Dataset):
 
     def __getitem__(self, item):
         path = self.in_files[item]
-        img = cv2.imread(path)
+        text_img = cv2.imread(path)
+        text_img = cv2.cvtColor(text_img, cv2.COLOR_BGR2RGB)
+        img_path = path.replace("_text000","")
+        img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = self.transform(image=img)['image']
-        img = np.transpose(img, (2, 0, 1))
+        
         # TODO: maybe generate mask before augmentations? slower, but better for segmentation-based masks
         # mask = self.mask_generator(img, iter_i=self.iter_i)
-        mask_path = path.replace(".jpg",".png")
+        mask_path = path.replace("text","mask")
         mask_img = cv2.imread(mask_path,cv2.IMREAD_GRAYSCALE)
         raw_255_count = np.sum(mask_img==255)
         mask_img = self.mask_to_tensor(mask_img) 
@@ -52,12 +55,22 @@ class InpaintingTrainDataset(Dataset):
         mask_1_count = torch.count_nonzero(mask_img==1)
         if raw_255_count!=mask_1_count:
             LOGGER.info(f"******yzw*******mask path:{mask_path} maybe destroyed!")
-        text_img_path = path.replace(".jpg","_text.png")
-        text_img = cv2.imread(text_img_path)
-        text_img = cv2.cvtColor(text_img, cv2.COLOR_BGR2RGB)
+        # test_img = np.transpose(img, (2, 0, 1))
+        # test_text_img= np.transpose(text_img, (2, 0, 1))
+        # if torch.equal(torch.Tensor((1-mask_img))*torch.Tensor(test_img),torch.tensor((1-mask_img))*torch.Tensor(test_text_img)):
+        #     print(f"******yzw******gt and image is equal!")
+        # else:
+        #     print(f"******yzw******gt and image is not equal!")
+        
+        img = self.transform(image=img)['image']
         text_img = self.transform(image=text_img)['image']
+        img = np.transpose(img, (2, 0, 1))
         text_img = np.transpose(text_img, (2, 0, 1))
         #LOGGER.info(f"******yzw*******mask(0,1) shape:(1, 256, 256)")
+        if torch.equal((1-mask_img)*img,(1-mask_img)*text_img):
+            print(f"******yzw******gt and image is equal!")
+        else:
+            print(f"******yzw******gt and image is not equal!")
         self.iter_i += 1
         return dict(image=text_img,
                     mask=mask_img,
@@ -125,6 +138,7 @@ class ImgSegmentationDataset(Dataset):
 
 
 def get_transforms(transform_variant, out_size):
+    print(f"*******yzw********transform:{transform_variant}")
     if transform_variant == 'default':
         transform = A.Compose([
             A.RandomScale(scale_limit=0.2),  # +/- 20%
@@ -134,7 +148,7 @@ def get_transforms(transform_variant, out_size):
             A.CLAHE(),
             A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2),
             A.HueSaturationValue(hue_shift_limit=5, sat_shift_limit=30, val_shift_limit=5),
-            A.ToFloat()
+            A.ToFloat(max_value=255)
         ])
     elif transform_variant == 'distortions':
         transform = A.Compose([

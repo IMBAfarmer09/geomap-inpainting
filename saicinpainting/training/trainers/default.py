@@ -49,13 +49,16 @@ class DefaultInpaintingTrainingModule(BaseInpaintingTrainingModule):
         if self.training and self.rescale_size_getter is not None:
             cur_size = self.rescale_size_getter(self.global_step)
             batch['gt'] = F.interpolate(batch['gt'], size=cur_size, mode='bilinear', align_corners=False)
+            # print(f"******yzw******batch_gt:\n{batch['gt']}")
             batch['image'] = F.interpolate(batch['image'], size=cur_size, mode='bilinear', align_corners=False)
+            # print(f"******yzw******batch_image:\n{batch['image']}")
             batch['mask'] = F.interpolate(batch['mask'], size=cur_size, mode='nearest')
 
         if self.training and self.const_area_crop_kwargs is not None:
             batch = make_constant_area_crop_batch(batch, **self.const_area_crop_kwargs)
+        
 
-        LOGGER.info(f"******yzw******batch keys:{batch.keys()}")
+        # LOGGER.info(f"******yzw******batch keys:{batch.keys()}")
 
         img = batch['gt']
         mask = batch['mask']
@@ -76,6 +79,8 @@ class DefaultInpaintingTrainingModule(BaseInpaintingTrainingModule):
             masked_img = torch.cat([masked_img, mask], dim=1)
 
         # LOGGER.info(f"******yzw******mask img 2 shape:{masked_img.shape}")
+        # print(f"******yzw******batch_gt:\n{batch['gt']}")
+        # print(f"******yzw******batch_image:\n{batch['image']}")
 
         batch['predicted_image'] = self.generator(masked_img)
         batch['inpainted'] = mask * batch['predicted_image'] + (1 - mask) * batch['image']
@@ -107,6 +112,7 @@ class DefaultInpaintingTrainingModule(BaseInpaintingTrainingModule):
                                   self.config.losses.l1.weight_missing)
 
         total_loss = l1_value
+        #print(f"total l1 loss:{total_loss}")
         metrics = dict(gen_l1=l1_value)
 
         # vgg-based perceptual loss

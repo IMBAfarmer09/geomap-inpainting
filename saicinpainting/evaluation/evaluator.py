@@ -128,7 +128,7 @@ def lpips_fid100_f1(metrics, fid_scale=100):
 
 
 class InpaintingEvaluatorOnline(nn.Module):
-    def __init__(self, scores, bins=10, image_key='image', inpainted_key='inpainted',
+    def __init__(self, scores, bins=10, image_key='gt', inpainted_key='inpainted',
                  integral_func=None, integral_title=None, clamp_image_range=None):
         """
         :param scores: dict {score_name: EvaluatorScore object}
@@ -139,6 +139,7 @@ class InpaintingEvaluatorOnline(nn.Module):
         LOGGER.info(f'{type(self)} init called')
         self.scores = nn.ModuleDict(scores)
         self.image_key = image_key
+        #print(f"******yzw*******self.image_key:{self.image_key}")
         self.inpainted_key = inpainted_key
         self.bins_num = bins
         self.bin_edges = np.linspace(0, 1, self.bins_num + 1)
