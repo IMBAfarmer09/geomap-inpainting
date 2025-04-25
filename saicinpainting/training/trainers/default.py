@@ -44,6 +44,17 @@ class DefaultInpaintingTrainingModule(BaseInpaintingTrainingModule):
         if self.fake_fakes_proba > 1e-3:
             self.fake_fakes_gen = FakeFakesGenerator(**(fake_fakes_generator_kwargs or {}))
 
+        # —— 如果 finetune 时要冻结判别器 ——
+        if getattr(self.config.losses, 'freeze_discriminator', False):
+            # 冻结权重，不更新
+            print(f"Set Freeze discriminator: {self.config.losses.freeze_discriminator}")
+            # print("444,444,444")
+            for p in self.discriminator.parameters():
+                p.requires_grad_(False)
+            # BatchNorm 等层保持推理模式
+            self.discriminator.eval()
+        # —— 其余保持不变 ——
+
     def forward(self, batch):
         #LOGGER.info(f"******yzw*******batch keys:{batch.keys()}")
         if self.training and self.rescale_size_getter is not None:

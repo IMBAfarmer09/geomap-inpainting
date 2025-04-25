@@ -22,6 +22,10 @@ losses:
   resnet_pl:
     weight: 30
     weights_path: ${env:TORCH_HOME}
+  histogram:
+    weight: 50
+    n_bins: 64
+  freeze_discriminator: true
 
 generator:
   kind: ffc_resnet

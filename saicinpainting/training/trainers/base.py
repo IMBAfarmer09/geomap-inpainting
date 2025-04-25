@@ -119,11 +119,25 @@ class BaseInpaintingTrainingModule(ptl.LightningModule):
         LOGGER.info('BaseInpaintingTrainingModule init done')
 
     def configure_optimizers(self):
-        discriminator_params = list(self.discriminator.parameters())
-        return [
-            dict(optimizer=make_optimizer(self.generator.parameters(), **self.config.optimizers.generator)),
-            dict(optimizer=make_optimizer(discriminator_params, **self.config.optimizers.discriminator)),
+        # discriminator_params = list(self.discriminator.parameters())
+        # return [
+        #     dict(optimizer=make_optimizer(self.generator.parameters(), **self.config.optimizers.generator)),
+        #     dict(optimizer=make_optimizer(discriminator_params, **self.config.optimizers.discriminator)),
+        # ]
+        # 只在非 freeze 阶段才给判别器创建 optimizer
+        optimizers = [
+            dict(optimizer=make_optimizer(self.generator.parameters(), ** self.config.optimizers.generator))
         ]
+        print(f"Freeze discriminator in Optimizers: {self.config.losses.freeze_discriminator}")
+        # print("111,111,111")
+        if not getattr(self.config.losses, 'freeze_discriminator', False):
+            print(f"Not Freeze discriminator in Optimizers: {self.config.losses.freeze_discriminator}")
+            # print("222,222,222")
+            optimizers.append(
+                dict(optimizer=make_optimizer( self.discriminator.parameters(), ** self.config.optimizers.discriminator))
+            )
+
+        return optimizers
 
     def train_dataloader(self):
         kwargs = dict(self.config.data.train)
@@ -233,12 +247,14 @@ class BaseInpaintingTrainingModule(ptl.LightningModule):
                     self.log(f'extra_val_{cur_eval_title}_{k}', v)
 
     def _do_step(self, batch, batch_idx, mode='train', optimizer_idx=None, extra_val_key=None):
-        if optimizer_idx == 0:  # step for generator
+        if optimizer_idx is None or optimizer_idx == 0:  # step for generator
             set_requires_grad(self.generator, True)
             set_requires_grad(self.discriminator, False)
+            # print(f"get optimizer_idx={optimizer_idx} training success")
         elif optimizer_idx == 1:  # step for discriminator
             set_requires_grad(self.generator, False)
             set_requires_grad(self.discriminator, True)
+            # print(f"get optimizer_idx={optimizer_idx} training success")
 
         batch = self(batch)
 
