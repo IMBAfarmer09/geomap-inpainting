@@ -18,6 +18,8 @@ from saicinpainting.training.visualizers import make_visualizer
 from saicinpainting.utils import add_prefix_to_keys, average_dicts, set_requires_grad, flatten_dict, \
     get_has_ddp_rank
 
+from saicinpainting.training.losses.histogram import HistogramLoss
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -77,6 +79,8 @@ class BaseInpaintingTrainingModule(ptl.LightningModule):
             self.visualizer = make_visualizer(**self.config.visualizer)
             self.val_evaluator = make_evaluator(**self.config.evaluator)
             self.test_evaluator = make_evaluator(**self.config.evaluator)
+
+            self.histogram_loss = HistogramLoss(**self.config.losses.histogram)
 
             if not get_has_ddp_rank():
                 LOGGER.info(f'Discriminator\n{self.discriminator}')

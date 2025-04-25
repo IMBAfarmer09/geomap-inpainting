@@ -112,8 +112,19 @@ class DefaultInpaintingTrainingModule(BaseInpaintingTrainingModule):
                                   self.config.losses.l1.weight_missing)
 
         total_loss = l1_value
-        #print(f"total l1 loss:{total_loss}")
         metrics = dict(gen_l1=l1_value)
+
+        # print(f"l1 loss:{l1_value}")
+        # print(f"total_loss:{total_loss}")
+
+        # 计算 Histogram Loss
+        if self.config.losses.histogram.weight > 0:
+            hist_loss_value = self.histogram_loss(predicted_img, img) * self.config.losses.histogram.weight
+            total_loss += hist_loss_value
+            metrics['gen_hist'] = hist_loss_value
+
+            # print(f"histogram loss:{hist_loss_value}")
+            # print(f"total_loss:{total_loss}")
 
         # vgg-based perceptual loss
         if self.config.losses.perceptual.weight > 0:
@@ -151,6 +162,7 @@ class DefaultInpaintingTrainingModule(BaseInpaintingTrainingModule):
             total_loss = total_loss + resnet_pl_value
             metrics['gen_resnet_pl'] = resnet_pl_value
 
+        # print(f"end total_loss:{total_loss}")
         return total_loss, metrics
 
     def discriminator_loss(self, batch):
@@ -189,3 +201,9 @@ class DefaultInpaintingTrainingModule(BaseInpaintingTrainingModule):
             metrics.update(add_prefix_to_keys(fake_fakes_adv_metrics, 'adv_'))
 
         return total_loss, metrics
+
+    # def on_after_backward(self):
+    #     for name, p in self.generator.named_parameters():
+    #         if p.grad is not None:
+    #             grad_norm = p.grad.detach().norm(2).item()
+    #             print(f"[GradNorm] Parameter: {name}, Gradient Norm: {grad_norm:.6f}", flush=True)
